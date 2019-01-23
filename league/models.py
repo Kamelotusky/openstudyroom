@@ -21,12 +21,14 @@ from .ogs import get_user_rank
 
 # pylint: disable=no-member
 
+
 class LeagueEvent(models.Model):
     """A League.
 
     The Event name is unfortunate and should be removed mone day.
     """
 
+    # Orders ared defined in get_events
     EVENT_TYPE_CHOICES = (
         ('ladder', 'ladder'),
         ('league', 'league'),
@@ -39,7 +41,7 @@ class LeagueEvent(models.Model):
         ('byoyomi', 'byoyomi'),
         ('fisher', 'fisher'),
     )
-    #start and end of the league
+    # start and end of the league
     begin_time = models.DateTimeField(blank=True)
     end_time = models.DateTimeField(blank=True)
     # This should have been a charfield from the start.
@@ -56,7 +58,8 @@ class LeagueEvent(models.Model):
     is_open = models.BooleanField(default=False)
     # A non public league can only be seen by
     is_public = models.BooleanField(default=False)
-    server = models.CharField(max_length=10, default='KGS')  # KGS, OGS
+    # A primary league will automatically be joined when joining other leagues
+    is_primary = models.BooleanField(default=False)
     event_type = models.CharField(  # ladder, tournament, league
         max_length=10,
         choices=EVENT_TYPE_CHOICES,
@@ -75,16 +78,16 @@ class LeagueEvent(models.Model):
 
     board_size = models.PositiveSmallIntegerField(default=19)
 
-    #if the league is a community league
+    # if the league is a community league
     community = models.ForeignKey(Community, blank=True, null=True, on_delete=models.CASCADE)
-    #small text to show on league pages
+    # small text to show on league pages
     description = MarkupTextField(
-            blank=True, null=True,
-            validators=[validators.NullableMaxLengthValidator(2000)]
+        blank=True, null=True,
+        validators=[validators.NullableMaxLengthValidator(2000)]
     )
     prizes = MarkupTextField(
-            blank=True, null=True,
-            validators=[validators.NullableMaxLengthValidator(5000)]
+        blank=True, null=True,
+        validators=[validators.NullableMaxLengthValidator(5000)]
     )
 
     class Meta:
@@ -227,7 +230,13 @@ class LeagueEvent(models.Model):
                 is_public=True,
                 community__isnull=True
             )
-        events = events.exclude(event_type='tournament').order_by('event_type')
+        events = events.exclude(event_type='tournament')
+        order = ['ladder', 'league', 'meijin', 'dan', 'ddk', 'tournament']
+        whens = []
+        for ind, v in enumerate(order):
+            whens.append(models.When(event_type=v, then=ind))
+        events = events.annotate(_sort_index=models.Case(*whens, output_field=models.IntegerField()))
+        events = events.order_by('_sort_index')
         return events
 
 
@@ -440,7 +449,6 @@ class Sgf(models.Model):
                 return sgfs.first().pk
         return -1
 
-
     def check_players(self, event):
         m = ''
         b = True
@@ -511,7 +519,7 @@ class Sgf(models.Model):
         return {'message': m, 'valid': b, 'tag': tag, }
 
     def check_validity(self):
-        """Check sgf validity for all open events.
+        """Check sgf validity for all open leaguesevents.
 
         Return a list of valid leagues is the sgf is valid and [] if not
         Update the sgf but do NOT save it to db. This way allow some preview.
@@ -525,7 +533,7 @@ class Sgf(models.Model):
             self.message = 'same sgf already in db : ' + str(duplicate)
             return []
 
-        events = LeagueEvent.objects.filter(is_open=True)  # get all open events
+        events = LeagueEvent.objects.filter(is_open=True).exclude(event_type='tournament')  # get all open events
         message = ''
         # if no open events, the sgf can't be valid
         if len(events) == 0:
@@ -573,19 +581,21 @@ class User(AbstractUser):
         self.n_win = None
         self.n_games = None
 
-
-    def join_event(self, event, division):
+    def join_event(self, event, division=None):
         if not event.can_join(self):
             return False
-        else:
-            player = LeaguePlayer()
-            player.event = event
-            player.division = division
-            player.kgs_username = self.profile.kgs_username
-            player.ogs_username = self.profile.ogs_username
-            player.user = self
-            player.save()
-            return True
+        if division is None:
+            division = event.last_division()
+        if not division:
+            return False
+        player = LeaguePlayer()
+        player.event = event
+        player.division = division
+        player.kgs_username = self.profile.kgs_username
+        player.ogs_username = self.profile.ogs_username
+        player.user = self
+        player.save()
+        return True
 
     def is_online(self):
         """return a boolean saying if a user is online in either KGS, OGS or discord"""
@@ -644,7 +654,6 @@ class User(AbstractUser):
     def is_osr_admin(self):
         return self.groups.filter(name='OSR_admin').exists()
 
-
     def nb_games(self):
         players = self.leagueplayer_set.all()
         n = 0
@@ -656,7 +665,7 @@ class User(AbstractUser):
         return self.leagueplayer_set.all().count()
 
     def nb_win(self):
-        #return self.winner_sgf.count()
+        # return self.winner_sgf.count()
         players = self.leagueplayer_set.all()
         n = 0
         for player in players:
@@ -725,7 +734,6 @@ class User(AbstractUser):
                     if opponent.user not in opponents:
                         opponents.append(opponent.user)
         return opponents
-
 
     @staticmethod
     def kgs_online_users():
@@ -850,6 +858,10 @@ class User(AbstractUser):
                 if opponent_ogs_id not in opponents:
                     continue
 
+                # Check game analysis
+                if not game['disable_analysis']:
+                    continue
+
                 # we need to get timesetting datas here because they are not
                 # in OGS sgfs
                 time_settings = json.loads(game["time_control_parameters"])
@@ -937,8 +949,8 @@ class Profile(models.Model):
     ogs_id = models.PositiveIntegerField(default=0, blank=True, null=True)
     # User can write what he wants in bio
     bio = MarkupTextField(
-            blank=True, null=True,
-            validators=[validators.NullableMaxLengthValidator(2000)]
+        blank=True, null=True,
+        validators=[validators.NullableMaxLengthValidator(2000)]
     )
     # p_status help manage the scraplist
     p_status = models.PositiveSmallIntegerField(default=0)
@@ -1087,7 +1099,7 @@ class LeaguePlayer(models.Model):
     ogs_username = models.CharField(max_length=40, null=True, blank=True)
     go_quest_username = models.CharField(max_length=40, null=True, blank=True)
 
-    #kgs_rank = models.CharField(max_length=20, default='')
+    # kgs_rank = models.CharField(max_length=20, default='')
     event = models.ForeignKey('LeagueEvent', on_delete=models.CASCADE)
     division = models.ForeignKey('Division', null=True, blank=True, on_delete=models.CASCADE)
     # p_status is deprecated, we now store that in player profile
