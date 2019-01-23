@@ -37,7 +37,7 @@ return false;};
         {% if user == meijin %}
             <i class="fa fa-trophy" data-toggle="tooltip" title="{{user.username}} is OSR Meijin !"></i>
         {% endif %}
-        {% if user == request.user %}My{% else %}{{user.username}}{% endif %} profile
+        {% if user == request.user %}{% trans "My" %}{% else %}{{user.username}}{% endif %} {% trans "profile" %}
     </h1>
 
 </div>
@@ -50,8 +50,8 @@ return false;};
 
 {% if user == meijin %}
 <div class="well">
-    <h4><i class="fa fa-trophy"></i> {{user.username}} is OSR Meijin!</h4>
-    He earned respect from all Open Study Room and a teaching game with Alexander Dinerchtein (3p).
+    <h4><i class="fa fa-trophy"></i> {{user.username}} {% trans "is OSR Meijin!" %}</h4>
+    {% trans "He earned respect from all Open Study Room and a teaching game with Alexander Dinerchtein (3p)." %}
 </div>
 {% endif %}
 <div class="panel panel-default">
@@ -85,7 +85,7 @@ return false;};
   <div class="col-md-6">
     <h4>Leagues</h4>
   {% for division in won_divisions %}
-  <p>  {{division.league_event.end_time|date}}: Winner of {{division|division_link}}</p>
+  <p>  {{division.league_event.end_time|date}}: {% trans "Winner of" %} {{division|division_link}}</p>
   {% endfor %}
 </div>
 {% endif %}
