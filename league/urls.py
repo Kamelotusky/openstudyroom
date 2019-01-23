@@ -14,6 +14,8 @@ urlpatterns = [
     url(r'^ladder/$', views.ladder, name='ladder'),
     url(r'^ddk/$', views.ddk, name='ddk'),
     url(r'^dan/$', views.dan, name='dan'),
+    url(r'^9x9/$', views.ninenine, name='ninenine'),
+
     url(r'^admin/event/(?P<to_event_id>[0-9]+)/populate/$',
         views.populate, name='admin_event_populate'),
     url(r'^admin/event/(?P<to_event_id>[0-9]+)/populate/(?P<from_event_id>[0-9]+)/$',
@@ -68,7 +70,7 @@ urlpatterns = [
     ),
     url(
         r'^admin/events/create/(?P<copy_from_pk>[0-9]+)/$',
-        views.LeagueEventCreate.as_view(success_url='/league/admin/events/'),
+        views.LeagueEventCreate.as_view(),
         name='admin_events_create'
     ),
     url(r'^admin/events/(?P<event_id>[0-9]+)/set_primary/$',
@@ -104,7 +106,7 @@ urlpatterns = [
     url(r'^(?P<event_id>[0-9]+)/quit/$', views.quit_league, name='quit_league'),
     url(r'^(?P<event_id>[0-9]+)/quit/(?P<user_id>[0-9]+)/$', views.quit_league, name='quit_league'),
 
-    url(r'^admin/create-all-profiles/$', views.create_all_profiles, name='create_all_profiles'),
+    url(r'^admin/create-profile/(?P<user_id>[0-9]+)$', views.create_profile, name='create_profile'),
     url(r'^admin/update-all-sgf-check-code/$',
         views.update_all_sgf_check_code, name='update_all_sgf_check_code'),
     url(

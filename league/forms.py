@@ -5,14 +5,17 @@ from django.contrib.auth.models import Group
 from django.forms import ModelForm
 from django_countries.widgets import CountrySelectWidget
 import pytz
+from community.models import Community
 
 from .models import Division, LeagueEvent, Profile
 from .ogs import get_user_id, get_user_rank
 
 
+
 class SgfAdminForm(forms.Form):
     sgf = forms.CharField(label='sgf data', widget=forms.Textarea(attrs={'cols': 60, 'rows': 20}))
     url = forms.CharField(label="KGS archive link", required=False)
+
 
 class ActionForm(forms.Form):
     action = forms.CharField(label='action', widget=forms.HiddenInput(), required=False)
@@ -29,6 +32,12 @@ class LeagueSignupForm(forms.Form):
         required=False,
         initial='UTC'
     )
+
+    def __init__(self, *args, **kwargs):
+        super(LeagueSignupForm, self).__init__(*args, **kwargs)
+        communities = Community.objects.filter(private=False)
+        choices = [(community.pk, community.name) for community in communities]
+        self.fields["communities"] = forms.MultipleChoiceField(choices=choices, required=False)
 
     def clean_kgs_username(self):
         if not self.cleaned_data['kgs_username']:
@@ -62,6 +71,10 @@ class LeagueSignupForm(forms.Form):
         user.kgs_username = self.cleaned_data['kgs_username']
         group = Group.objects.get(name='new_user')
         user.groups.add(group)
+        if self.cleaned_data['communities']:
+            communities = Community.objects.filter(pk__in=self.cleaned_data['communities'])
+            for community in communities:
+                user.groups.add(community.new_user_group)
         user.save()
         profile = Profile(
             user=user,
@@ -79,8 +92,11 @@ class LeagueSignupForm(forms.Form):
         profile.save()
 
 
+
+
 class UploadFileForm(forms.Form):
     file = forms.FileField()
+
 
 class LeaguePopulateForm(forms.Form):
     # a form related to a set of leagueplayers with one field per player.
@@ -95,6 +111,7 @@ class LeaguePopulateForm(forms.Form):
             #division =divisions.filter(order=player.division.order).first()
             #if division != None:
             #    self.fields['player_'+str(player.pk)].inital = (division.pk,division.name)
+
 
 class DivisionForm(ModelForm):
     next = forms.CharField(label='next', widget=forms.HiddenInput(), required=False)
@@ -123,6 +140,7 @@ class LeagueEventForm(forms.ModelForm):
             'additional_time',
             'is_open',
             'is_public',
+            'is_primary',
             'description',
             'prizes'
         ]
@@ -141,10 +159,15 @@ class LeagueEventForm(forms.ModelForm):
             'nb_matchs': 'Maximum number of match two players can play together',
             'ppwin': 'Point per win',
             'pploss': 'Point per loss',
+            'main_time': 'The minimum starting time of the clock.',
+            'additional_time': "If byoyomi, user will have a minimum 3 x this time byoyomi.\
+                If Fischer, it's the additional time per move",
             'min_matchs': 'Minimum of match for a user to be considered active',
             'is_open': 'Can people register and game get scraped?',
             'is_public': 'Can people see the league?',
+            'is_primary': 'A primary league will automatically be joined when joining another league.'
         }
+
 
 class EmailForm(forms.Form):
     subject = forms.CharField(required=True)
@@ -156,6 +179,7 @@ class TimezoneForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ['timezone']
+
 
 class ProfileForm(ModelForm):
     class Meta:
@@ -217,7 +241,6 @@ class ProfileForm(ModelForm):
                 # udate goquest username for all players
                 open_players = self.instance.user.leagueplayer_set.filter(event__is_open=True)
                 open_players.update(go_quest_username=go_quest_username)
-                print(open_players)
         return go_quest_username
 
     def clean(self):
