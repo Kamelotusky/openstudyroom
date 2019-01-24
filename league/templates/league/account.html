@@ -28,14 +28,14 @@ return false;};
 
 {% block body_class %}user{% endblock %}
 
-{% block title %}{% if user == request.user %}My{% else %}{{user.username}}{% endif %} profile{% endblock %}
+{% block title %}{% if user == request.user %}{% trans "My" %}{% else %}{{user.username}}{% endif %} {% trans "profile" %}{% endblock %}
 {% block heading %}
 {% get_meijin as meijin %}
 
 <div class="page-header">
     <h1>
         {% if user == meijin %}
-            <i class="fa fa-trophy" data-toggle="tooltip" title="{{user.username}} is OSR Meijin !"></i>
+            <i class="fa fa-trophy" data-toggle="tooltip" title="{{user.username}} {% trans "is OSR Meijin !" %}"></i>
         {% endif %}
         {% if user == request.user %}{% trans "My" %}{% else %}{{user.username}}{% endif %} {% trans "profile" %}
     </h1>
@@ -60,9 +60,9 @@ return false;};
     {% if user.profile.country %}
     <img   src="{{user.profile.country.flag}}">
     {% endif %}
-     {{user.username}} infos
+     {{user.username}} {% trans "infos" %}
      {% if request.user == user %}
-      <a href="{% url 'league:profile_update' user.profile.pk %}"><button class="btn btn-default pull-right">{% bootstrap_icon 'wrench' %} Edit </button></a>
+      <a href="{% url 'league:profile_update' user.profile.pk %}"><button class="btn btn-default pull-right">{% bootstrap_icon 'wrench' %} {% trans "Edit" %} </button></a>
      {% endif %}
   </h4>
 </div>
@@ -83,7 +83,7 @@ return false;};
 <div class="panel-body">
   {% if won_divisions %}
   <div class="col-md-6">
-    <h4>Leagues</h4>
+    <h4>{% trans "Leagues" %}</h4>
   {% for division in won_divisions %}
   <p>  {{division.league_event.end_time|date}}: {% trans "Winner of" %} {{division|division_link}}</p>
   {% endfor %}
@@ -94,7 +94,7 @@ return false;};
 <div class="col-md-6">
   <h4>Tournaments</h4>
 {% for tournament in won_tournaments %}
-  <p>{{tournament.end_time|date}}: Winner of <a href="{% url "tournament:view" tournament.pk %}">{{tournament.name}}</a></p>
+  <p>{{tournament.end_time|date}}: {% trans "Winner of" %} <a href="{% url "tournament:view" tournament.pk %}">{{tournament.name}}</a></p>
 {% endfor %}
 </div>
 {% endif %}
@@ -105,11 +105,11 @@ return false;};
 
 {% if players %}
 <div class="panel panel-default">
-  <div class="panel-heading"><h4>{{user.username}} results of passed and open leagues</h4></div>
+  <div class="panel-heading"><h4>{{user.username}} {% trans "results of passed and open leagues" %}</h4></div>
 <div class="panel-body">
 <div class="col-md-6">
 <ul class="nav nav-tabs">
-  <li class ="active"><a data-toggle="tab" href="#archives">Archives</a></li>
+  <li class ="active"><a data-toggle="tab" href="#archives">{% trans "Archives" %}</a></li>
   {% for event in open_events %}
   {% if event.is_in %}
   <li ><a data-toggle="tab" href="#{{event.pk}}">{{event.name}}</a></li>
@@ -121,11 +121,11 @@ return false;};
         <table id='archive-table' class='table' >
           <thead>
        <tr>
-         <th>Event</th>
-         <th>Division</th>
-         <th>win</th>
-         <th>loss</th>
-         <th>games </th>
+         <th>{% trans "Event" %}</th>
+         <th>{% trans "Division" %}</th>
+         <th>{% trans "win" %}</th>
+         <th>{% trans "loss" %}</th>
+         <th>{% trans "games" %} </th>
       </thead>
       <tbody>
   {% for player in players %}
@@ -147,10 +147,10 @@ return false;};
     <table id='{{event.pk}}-opponents-table' class=' table table-hover table-condensed'  >
        <thead>
          <tr>
-           <th>Rank</th>
-           <th>Player</th>
-           <th>score</th>
-           <th> {{user.profile.kgs_username}}'s results</th>
+           <th>{% trans "Rank" %}</th>
+           <th>{% trans "Player" %}</th>
+           <th>{% trans "score" %}</th>
+           <th> {{user.profile.kgs_username}}'s {% trans "results" %}</th>
         </thead>
         <tbody>
       {% with player.get_results as results %}
@@ -199,17 +199,17 @@ return false;};
 
 
 <div class="panel panel-default">
-<div class="panel-heading clearfix"><h3>{{user}} Games
+<div class="panel-heading clearfix"><h3>{{user}} {% trans "Games" %}
 
   <a href= "\league\all_sgf\{{user.pk}}">
-    <button class="btn btn-default btn-sm pull-right">Download all games</button>
+    <button class="btn btn-default btn-sm pull-right">{% trans "Download all games" %}</button>
   </a>
 
 </h3>
 </div>
   {% if sgfs is None %}
   <div class="panel-body">
-    {{user}} didn't play any league game yet.
+    {{user}} {% trans "didn't play any league game yet." %}
   {% else %}
 <div class ="row">
 <div class="col-md-4">
@@ -223,7 +223,7 @@ return false;};
 
     <div id="player">
       <div class="alert alert-info">
-      Click a game result to see it.
+      {% trans "Click a game result to see it." %}
     </div>
   </div>
 </div>
@@ -312,7 +312,7 @@ var config = {
                 tooltipItems.forEach(function(tooltipItem) {
                   sum += data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
                 });
-                return 'Games: ' + sum;
+                return '{% trans "Games:" %} ' + sum;
               },
             },
     }
