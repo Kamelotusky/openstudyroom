@@ -1,7 +1,7 @@
 {% extends "league/base.html" %}
 {% load league_tags wgo_tags l10n i18n%}
 
-{% block title %}Archives - Games {% if sgf %}- {{sgf.black.username}} vs {{sgf.white.username}} {%endif %}{% endblock %}
+{% block title %}{% trans "Archives  - Games" %} {% if sgf %}- {{sgf.black.username}} vs {{sgf.white.username}} {%endif %}{% endblock %}
 {% block extra_head_js %}
 <script type="text/javascript">
 function load_game(sgf_id) {
@@ -22,9 +22,9 @@ function processData(data)
     var player = new WGo.BasicPlayer(elem, {
       sgf: data.sgf
       });
-    window.history.pushState('page2', 'Title', data.permalink);
+    window.history.pushState('page2', '{% trans "Title" %}', data.permalink);
     document.getElementById("game-header").innerHTML= ' - ' + data.white + ' vs ' + data.black;
-    document.title ='Archives - Games - '+ data.white + ' vs ' + data.black + ' - Open Study Room';
+    document.title ='{% trans "Archive - Games" %} - '+ data.white + ' vs ' + data.black + ' - {% trans "Open Study Room" %}';
 };
 return false;};
 </script>
@@ -53,7 +53,7 @@ return false;};
   <li class="active"><a href="{% url 'league:games'  %}">{% trans "Games" %}</a></li>
 </ul>
 </nav>
-<div class="well"> This table shows all games that have been played in the Open Study Room</div>
+<div class="well"> {% trans "This table shows all games that have been played in the Open Study Room." %}</div>
 
 <div class ="row">
 <div class="col-md-4">
@@ -63,7 +63,7 @@ return false;};
     {% endif %}
 </div>
 <div class="panel panel-default">
-<div class="panel-heading">Games</div>
+<div class="panel-heading">{% trans "Games" %}</div>
 {% include "league/includes/games.html" with sgfs=sgfs %}
 </div>
 </div>
